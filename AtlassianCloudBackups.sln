@@ -1,0 +1,31 @@
+﻿
+Microsoft Visual Studio Solution File, Format Version 12.00
+# Visual Studio 15
+VisualStudioVersion = 15.0.26430.6
+MinimumVisualStudioVersion = 10.0.40219.1
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "AtlassianCloudBackupsLibrary", "AtlassianCloudBackupsLibrary\AtlassianCloudBackupsLibrary.csproj", "{28FAF2E1-F851-4491-AA21-27273B53E214}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "AtlassianCloudBackupsTool", "AtlassianCloudBackupsTool\AtlassianCloudBackupsTool.csproj", "{12D99E7D-A469-4B85-BE7A-051205FE1E9A}"
+EndProject
+Global
+	GlobalSection(Performance) = preSolution
+		HasPerformanceSessions = true
+	EndGlobalSection
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|Any CPU = Debug|Any CPU
+		Release|Any CPU = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{28FAF2E1-F851-4491-AA21-27273B53E214}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{28FAF2E1-F851-4491-AA21-27273B53E214}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{28FAF2E1-F851-4491-AA21-27273B53E214}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{28FAF2E1-F851-4491-AA21-27273B53E214}.Release|Any CPU.Build.0 = Release|Any CPU
+		{12D99E7D-A469-4B85-BE7A-051205FE1E9A}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{12D99E7D-A469-4B85-BE7A-051205FE1E9A}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{12D99E7D-A469-4B85-BE7A-051205FE1E9A}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{12D99E7D-A469-4B85-BE7A-051205FE1E9A}.Release|Any CPU.Build.0 = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+EndGlobal
