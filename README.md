@@ -23,7 +23,7 @@ In order to use the console application, you will first need to create an appset
     "destination": "/backup-location/jira",
     "downloadUrlBase": "",
     "fileName": "jira-backup-{0}.zip",
-    "backupsToKeep": 0,
+    "backupsToKeep": 7,
     "maxAgeArchivedBackups": 30
   },
   "confluenceBackupConfig": {
@@ -34,7 +34,7 @@ In order to use the console application, you will first need to create an appset
     "destination": "/backup-location/confluence",
     "downloadUrlBase": "wiki/download/",
     "fileName": "confluence-backup-{0}.zip",
-    "backupsToKeep": 0,
+    "backupsToKeep": 7,
     "maxAgeArchivedBackups": 30
   },
   "bitbucketBackupConfig": {
@@ -61,9 +61,11 @@ The style you use will depend on the platform that runs the .NET Core installati
 Once you've created the config file, you can then run the executable like this: 
 
 ```sh
-dotnet AtlassianCloudBackupsTool.dll /backupJira /backupConfluence /backupBitBucket /logPath:z:\backups /logFileName:backup.log
+dotnet AtlassianCloudBackupsTool.dll /backupJira /backupConfluence /backupBitBucket /logPath:/backup-location /logFileName:backup.log
 ```
 
 Note that the /logPath parameter is where the tool will write it's log so make sure the user executing the tool has write permissions to that location on disk, as well as the locations specified in the "destination" properties of each config object in the appsettings.config file.
 
 The flags 'backupBitBucket', 'backupJira' and 'backupConflence' enable the respective jobs within the console application.  You can exclude any one of them from the command.
+
+There is an additional flag, 'runCleanUpOnly', that can be appended to the command that will only run the backup and archival process for the specified tools. 
