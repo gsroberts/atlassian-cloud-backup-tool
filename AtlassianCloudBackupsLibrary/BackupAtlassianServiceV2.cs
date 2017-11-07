@@ -150,136 +150,158 @@ namespace AtlassianCloudBackupsLibrary
         /// The actual work to get the backup from the remote service
         /// </summary>
         /// <returns>Awaitable BackupAtlassianService instance</returns>
-        public async Task<IBackupJob> Execute()
+        public async Task<IBackupJob> Execute(bool runCleanUpOnly = false)
         {
-            Logger.Current.Log(_logLabel, string.Format("Beginning backup for {0}...", GetServiceToBeBackedUpLabel()));
-
-            await Prepare();
-
-            using (Client)
+            if (!runCleanUpOnly)
             {
-                Client.BaseAddress = new Uri(string.Format(_service.BaseUrl, Account));
-                Client.DefaultRequestHeaders.Accept.Clear();
-                Client.DefaultRequestHeaders.Accept.Add(new MediaTypeWithQualityHeaderValue("application/json"));
+                Logger.Current.Log(_logLabel,
+                    string.Format("Beginning backup for {0}...", GetServiceToBeBackedUpLabel()));
 
-                Logger.Current.Log(_logLabel, "Attempting to log in to Atlassian...");
-                // Get auth token from the cloud instance
-                var content = new StringContent("{" + string.Format(" \"username\" : \"{0}\", \"password\" : \"{1}\" ", UserName, Password) + "}", Encoding.UTF8, "application/json");
+                await Prepare();
 
-                var response = await Client.PostAsync(_service.AuthUrl, content);
-
-                if (response.IsSuccessStatusCode)
+                using (Client)
                 {
-                    Logger.Current.Log(_logLabel, string.Format("Successfully logged in to the {0} account as {1}.", Account, UserName));
-                }
-                else
-                {
-                    Logger.Current.Log(_logLabel, "Failed to authenticate to Atlassian cloud servers!");
-                    Logger.Current.Log(_logLabel, string.Format("Aborting backup job for {0}!", GetServiceToBeBackedUpLabel()));
-                    return this;
-                }
+                    Client.BaseAddress = new Uri(string.Format(_service.BaseUrl, Account));
+                    Client.DefaultRequestHeaders.Accept.Clear();
+                    Client.DefaultRequestHeaders.Accept.Add(new MediaTypeWithQualityHeaderValue("application/json"));
 
-                Logger.Current.Log(_logLabel, "Triggering backup...");
-                // Trigger backup
-                var triggerContent = new StringContent("{ \"cbAttachments\" : \"true\", \"exportToCloud\" : \"true\" }", Encoding.UTF8, "application/json");
-                var triggerResponse = await Client.PostAsync(_service.BackupTriggerUrl, triggerContent);
+                    Logger.Current.Log(_logLabel, "Attempting to log in to Atlassian...");
+                    // Get auth token from the cloud instance
+                    var content =
+                        new StringContent(
+                            "{" + string.Format(" \"username\" : \"{0}\", \"password\" : \"{1}\" ", UserName,
+                                Password) + "}", Encoding.UTF8, "application/json");
 
-                if (!triggerResponse.IsSuccessStatusCode)
-                {
-                    var resultBody = triggerResponse.Content.ReadAsStringAsync().Result;
-                    Logger.Current.Log(_logLabel, string.Format("Failed to trigger backup generation! Reason : {0}", resultBody));
-                    
-                    Logger.Current.Log(_logLabel, "Attempting to obtain last task ID for this JIRA instance...");
+                    var response = await Client.PostAsync(_service.AuthUrl, content);
 
-                    // Attempt to get the last task ID so we can proceed
-                    var lastTaskResponse = await Client.GetAsync(_service.LastTaskIdUrl);
-
-                    if (lastTaskResponse != null)
+                    if (response.IsSuccessStatusCode)
                     {
-                        _backupTaskId = await lastTaskResponse.Content.ReadAsStringAsync();
-                        Logger.Current.Log(_logLabel, "Success!");
+                        Logger.Current.Log(_logLabel,
+                            string.Format("Successfully logged in to the {0} account as {1}.", Account, UserName));
                     }
-                }
-                else
-                {
-                    var resultBody = triggerResponse.Content.ReadAsStringAsync();
-                    var body = JObject.Parse(resultBody.Result);
-
-                    _backupTaskId = body["taskId"].ToString();
-                    
-                    Logger.Current.Log(_logLabel, "Backup generation triggered successfully.");
-                }
-                
-                Logger.Current.Log(_logLabel, string.Format("Backup Task ID => {0}", _backupTaskId));
-
-                var backupFileName = string.Empty;
-                var backupCreated = false;
-
-                if (string.IsNullOrWhiteSpace(_backupTaskId))
-                {
-                    Logger.Current.Log(_logLabel, "Unable to obtain backup file automatically.  If generation was succesfully triggered, the backup must be downloaded manually from the JIRA cloud instance administration interface.");
-                    return this;
-                }
-                
-                while (!backupCreated)
-                {
-                    var getBackupProgressResponse = await Client.GetAsync(string.Format(_service.BackupProgressUrl, _backupTaskId));
-
-                    if (getBackupProgressResponse.IsSuccessStatusCode)
+                    else
                     {
-                        var resultBody = getBackupProgressResponse.Content.ReadAsStringAsync();
+                        Logger.Current.Log(_logLabel, "Failed to authenticate to Atlassian cloud servers!");
+                        Logger.Current.Log(_logLabel,
+                            string.Format("Aborting backup job for {0}!", GetServiceToBeBackedUpLabel()));
+                        return this;
+                    }
+
+                    Logger.Current.Log(_logLabel, "Triggering backup...");
+                    // Trigger backup
+                    var triggerContent =
+                        new StringContent("{ \"cbAttachments\" : \"true\", \"exportToCloud\" : \"true\" }",
+                            Encoding.UTF8, "application/json");
+                    var triggerResponse = await Client.PostAsync(_service.BackupTriggerUrl, triggerContent);
+
+                    if (!triggerResponse.IsSuccessStatusCode)
+                    {
+                        var resultBody = triggerResponse.Content.ReadAsStringAsync().Result;
+                        Logger.Current.Log(_logLabel,
+                            string.Format("Failed to trigger backup generation! Reason : {0}", resultBody));
+
+                        Logger.Current.Log(_logLabel, "Attempting to obtain last task ID for this JIRA instance...");
+
+                        // Attempt to get the last task ID so we can proceed
+                        var lastTaskResponse = await Client.GetAsync(_service.LastTaskIdUrl);
+
+                        if (lastTaskResponse != null)
+                        {
+                            _backupTaskId = await lastTaskResponse.Content.ReadAsStringAsync();
+                            Logger.Current.Log(_logLabel, "Success!");
+                        }
+                    }
+                    else
+                    {
+                        var resultBody = triggerResponse.Content.ReadAsStringAsync();
                         var body = JObject.Parse(resultBody.Result);
 
-                        var currentStatus = body["status"].ToString();
-                        var estimatedProgress = body["progress"].ToString();
-                        var resultPropExists = body["result"] != null;
+                        _backupTaskId = body["taskId"].ToString();
 
-                        Logger.Current.Log(_logLabel, currentStatus + " ==> " + estimatedProgress);
+                        Logger.Current.Log(_logLabel, "Backup generation triggered successfully.");
+                    }
 
-                        if (resultPropExists)
+                    Logger.Current.Log(_logLabel, string.Format("Backup Task ID => {0}", _backupTaskId));
+
+                    var backupFileName = string.Empty;
+                    var backupCreated = false;
+
+                    if (string.IsNullOrWhiteSpace(_backupTaskId))
+                    {
+                        Logger.Current.Log(_logLabel,
+                            "Unable to obtain backup file automatically.  If generation was succesfully triggered, the backup must be downloaded manually from the JIRA cloud instance administration interface.");
+                        return this;
+                    }
+
+                    while (!backupCreated)
+                    {
+                        var getBackupProgressResponse =
+                            await Client.GetAsync(string.Format(_service.BackupProgressUrl, _backupTaskId));
+
+                        if (getBackupProgressResponse.IsSuccessStatusCode)
                         {
-                            var resultProp = JObject.Parse(body["result"].ToString());
-                            
-                            var mediaId = resultProp["mediaFileId"].ToString();
+                            var resultBody = getBackupProgressResponse.Content.ReadAsStringAsync();
+                            var body = JObject.Parse(resultBody.Result);
 
-                            var mediaFileName = resultProp["fileName"].ToString();
-                            
-                            backupFileName = mediaId + "/" + mediaFileName;
-                            backupCreated = true;
+                            var currentStatus = body["status"].ToString();
+                            var estimatedProgress = body["progress"].ToString();
+                            var resultPropExists = body["result"] != null;
 
-                            Logger.Current.Log(_logLabel, "Backup file generation complete.");
+                            Logger.Current.Log(_logLabel, currentStatus + " ==> " + estimatedProgress);
+
+                            if (resultPropExists)
+                            {
+                                var resultProp = JObject.Parse(body["result"].ToString());
+
+                                var mediaId = resultProp["mediaFileId"].ToString();
+
+                                var mediaFileName = resultProp["fileName"].ToString();
+
+                                backupFileName = mediaId + "/" + mediaFileName;
+                                backupCreated = true;
+
+                                Logger.Current.Log(_logLabel, "Backup file generation complete.");
+                            }
+                        }
+
+                        System.Threading.Thread.Sleep(5000);
+                    }
+
+                    var backupFileUrl = string.Format(_service.BaseUrl, Account) + _service.DownloadUrlBase +
+                                        backupFileName;
+
+                    Logger.Current.Log(_logLabel,
+                        string.Format("Getting generated backup file from {0}", backupFileUrl));
+                    // Download the backup
+                    using (var fileResponse = await Client.GetAsync(_service.DownloadUrlBase + backupFileName,
+                        HttpCompletionOption.ResponseHeadersRead))
+                    {
+                        Logger.Current.Log(_logLabel,
+                            string.Format("Downloading {0} bytes of data...",
+                                fileResponse.Content.Headers.ContentLength));
+
+                        using (var stream = await fileResponse.Content.ReadAsStreamAsync())
+                        {
+                            using (var outStream =
+                                File.Open(
+                                    Path.Combine(BackupDestination,
+                                        string.Format(FileName, DateTime.Now.ToString("MMddyy"))), FileMode.Create))
+                            {
+                                await stream.CopyToAsync(outStream);
+                            }
+                        }
+
+                        if (File.Exists("backupTaskID"))
+                        {
+                            File.Delete("backupTaskID");
                         }
                     }
 
-                    System.Threading.Thread.Sleep(5000);
+                    Logger.Current.Log(_logLabel, "Download complete.");
+                    Logger.Current.Log(_logLabel, "Backup complete.");
                 }
-
-                var backupFileUrl = string.Format(_service.BaseUrl, Account)+_service.DownloadUrlBase+backupFileName;
-                
-                Logger.Current.Log(_logLabel, string.Format("Getting generated backup file from {0}", backupFileUrl));
-                // Download the backup
-                using (var fileResponse = await Client.GetAsync(_service.DownloadUrlBase + backupFileName, HttpCompletionOption.ResponseHeadersRead))
-                {
-                    Logger.Current.Log(_logLabel, string.Format("Downloading {0} bytes of data...", fileResponse.Content.Headers.ContentLength));
-
-                    using (var stream = await fileResponse.Content.ReadAsStreamAsync())
-                    {
-                        using (var outStream = File.Open(Path.Combine(BackupDestination, string.Format(FileName, DateTime.Now.ToString("MMddyy"))), FileMode.Create))
-                        {
-                            await stream.CopyToAsync(outStream);
-                        }
-                    }
-
-                    if (File.Exists("backupTaskID"))
-                    {
-                        File.Delete("backupTaskID");
-                    }
-                }
-
-                Logger.Current.Log(_logLabel, "Download complete.");
-                Logger.Current.Log(_logLabel, "Backup complete.");
             }
-
+            
             await CleanUp();
 
             return this;

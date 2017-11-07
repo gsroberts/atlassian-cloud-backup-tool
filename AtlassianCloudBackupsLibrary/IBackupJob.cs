@@ -9,7 +9,7 @@
         Func<IConfigurationSection, Task> PrepareFunction { get; set; }
         Func<IConfigurationSection, Task> CleanUpFunction { get; set; }
 
-        Task<IBackupJob> Execute();
+        Task<IBackupJob> Execute(bool runCleanupOnly = false);
         Task<IBackupJob> Prepare();
         Task<IBackupJob> CleanUp();
     }

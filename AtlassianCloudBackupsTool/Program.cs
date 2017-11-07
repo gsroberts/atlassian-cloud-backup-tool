@@ -1,13 +1,11 @@
 ﻿namespace AtlassianCloudBackupsTool
 {
     using System;
-    using System.IO.Compression;
     using System.Threading.Tasks;
     using AtlassianCloudBackupsLibrary;
     using Microsoft.Extensions.Configuration;
     using AtlassianCloudBackupsLibrary.Helpers;
     using System.IO;
-    using System.Linq;
 
     class Program
     {
@@ -42,7 +40,7 @@
         }
 
         /// <summary>
-        /// Async task that runs the buld of the backup operation
+        /// Async task that runs the bulk of the backup operation
         /// 
         /// This is only required because you can't have an async entry point into a console application
         /// </summary>
@@ -53,6 +51,7 @@
             var runConfluenceBackup = args.GetParameterValue<bool>("backupConfluence");
             var runJiraBackup = args.GetParameterValue<bool>("backupJira");
             var runBitBucketBackup = args.GetParameterValue<bool>("backupBitBucket");
+            var runCleanUpOnly = args.GetParameterValue<bool>("runCleanUpOnly");
 
             var account = _config["cloudAccount"];
             var username = _config["userName"];
@@ -69,7 +68,7 @@
                     CleanUpFunction = TrimBackups
                 };
 
-                await backupConfluence.Execute();
+                await backupConfluence.Execute(runCleanUpOnly);
             }
 
             if (runJiraBackup)
@@ -83,7 +82,7 @@
                     CleanUpFunction = TrimBackups
                 };
 
-                await backupJira.Execute();
+                await backupJira.Execute(runCleanUpOnly);
             }
 
             if (runBitBucketBackup)
@@ -91,7 +90,7 @@
                 var bitbucketConfig = _config.GetSection("bitbucketBackupConfig");
                 var backupBitBucket = new BackupBitBucketService(bitbucketConfig);
 
-                await backupBitBucket.Execute();
+                await backupBitBucket.Execute(runCleanUpOnly);
             }
         }
 
@@ -101,8 +100,11 @@
         /// <param name="config">IConfigurationSection that contains the properties referenced in the task</param>
         /// <returns>Awaitable task</returns>
         private static async Task TrimBackups(IConfigurationSection config)
-        {
+        {          
             var backupDir = Directory.GetFiles(config["destination"]);
+            
+            Logger.Current.Log(_logLabel, string.Format("Cleaning up archived backups located at {0}", config["destination"]));
+            
             var today = DateTime.Today.Date;
 
             var backupsToKeep = int.Parse(config["backupsToKeep"]);
@@ -111,37 +113,40 @@
             {
                 var oldestDateToKeep = today.AddDays(backupsToKeep * -1);
 
-                var archivePath = Path.Combine(config["destination"], "backup-archive.zip");
+                var archivePath = Path.Combine(config["destination"], "archive");
 
-                using (var zipToOpen = (!File.Exists(archivePath)) ? File.Create(archivePath) : File.Open(archivePath, FileMode.Open))
+                if (!Directory.Exists(archivePath))
                 {
-                    using (var archive = new ZipArchive(zipToOpen, ZipArchiveMode.Update))
+                    Directory.CreateDirectory(archivePath);
+                }
+
+                foreach (var file in backupDir)
+                {
+                    var fileInfo = new FileInfo(file);
+
+                    // Archive old backups beyond the keep threshold specified in appsettings.config for this job
+                    if (fileInfo.LastWriteTime < oldestDateToKeep)
                     {
-                        foreach (var file in backupDir)
-                        {
-                            var fileInfo = new FileInfo(file);
+                        fileInfo.CopyTo(Path.Combine(archivePath, fileInfo.Name));
 
-                            // Archive old backups beyond the keep threshold specified in appsettings.config for this job
-                            if (fileInfo.LastWriteTime < oldestDateToKeep)
-                            {
-                                archive.CreateEntryFromFile(fileInfo.FullName, fileInfo.Name);
+                        fileInfo.Delete();
+                        Logger.Current.Log(_logLabel, string.Format("Archived old backup file {0}", fileInfo.FullName));
+                    }
+                }
 
-                                fileInfo.Delete();
-                                Logger.Current.Log(_logLabel, string.Format("Removing old backup file {0}", fileInfo.FullName));
-                            }
-                        }
+                // Trim archived backups based on max age of archived backups specified in appsettings.config for this job
+                var maxAgeArchivedBackups = int.Parse(config["maxAgeArchivedBackups"]);
+                var ageThreshold = today.AddDays(maxAgeArchivedBackups*-1);
 
-                        // Trim archived backups based on max age of archived backups specified in appsettings.config for this job
-                        var maxAgeArchivedBackups = int.Parse(config["maxAgeArchivedBackups"]);
-                        var ageThreshold = today.AddDays(maxAgeArchivedBackups*-1);
+                var entriesToRemove = Directory.GetFiles(archivePath);
 
-                        var entriesToRemove = archive.Entries.Where(entry => entry.LastWriteTime < ageThreshold).ToList();
+                foreach (var entry in entriesToRemove)
+                {
+                    var lastWriteTime = File.GetLastWriteTime(entry);
 
-                        // Delete queued entries
-                        foreach (var entry in entriesToRemove)
-                        {
-                            entry.Delete();
-                        }
+                    if (lastWriteTime < ageThreshold)
+                    {
+                        File.Delete(entry);
                     }
                 }
             }

@@ -79,47 +79,54 @@
             _repositories = new List<BitBucketRepository>();
         }
 
-        public async Task<IBackupJob> Execute()
+        public async Task<IBackupJob> Execute(bool runCleanUpOnly = false)
         {
-            Logger.Current.Log(_logLabel, "Starting BitBucket backup task...");
-
-            var backupTeamAccount = bool.Parse(_config["useTeam"]);
-            if (backupTeamAccount)
+            if (!runCleanUpOnly)
             {
-                Logger.Current.Log(_logLabel, "Backing up team account based on configuration...");
-            }
+                Logger.Current.Log(_logLabel, "Starting BitBucket backup task...");
 
-            Logger.Current.Log(_logLabel, string.Format("Beginning backup for Bitbucket account {0}...", (TeamAccountBackupEnabled) ? _config["teamName"] : _config["userName"]));
-
-            using (Client)
-            {
-                Client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Basic", Convert.ToBase64String(
-                    Encoding.ASCII.GetBytes(string.Format("{0}:{1}", _config["user"], _config["password"]))));
-
-                await GetRepositoriesForAccount();
-
-                Logger.Current.Log(_logLabel, string.Format("{0} repos found for account...", _repositories.Count));
-
-                foreach (var repo in _repositories)
+                var backupTeamAccount = bool.Parse(_config["useTeam"]);
+                if (backupTeamAccount)
                 {
-                    var repoDestination = Path.Combine(_config["destination"], repo.Name);
-                    
-                    // We need to fetch updates if the directory already exists
-                    if (Directory.Exists(repoDestination) && Repository.IsValid(repoDestination))
-                    {
-                        FetchUpdatesForRepo(repo, repoDestination);
-                    }
-                    // Create a bare clone of the repository
-                    else
-                    {
-                        CloneBareRepo(repo, repoDestination);
-                    }
-
-                    Logger.Current.Log(_logLabel, "Clone operation complete.");
+                    Logger.Current.Log(_logLabel, "Backing up team account based on configuration...");
                 }
-            }
 
-            Logger.Current.Log(_logLabel, "Backup complete.");
+                Logger.Current.Log(_logLabel,
+                    string.Format("Beginning backup for Bitbucket account {0}...",
+                        (TeamAccountBackupEnabled) ? _config["teamName"] : _config["userName"]));
+
+                using (Client)
+                {
+                    Client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Basic",
+                        Convert.ToBase64String(
+                            Encoding.ASCII.GetBytes(string.Format("{0}:{1}", _config["user"], _config["password"]))));
+
+                    await GetRepositoriesForAccount();
+
+                    Logger.Current.Log(_logLabel, string.Format("{0} repos found for account...", _repositories.Count.ToString()));
+
+                    foreach (var repo in _repositories)
+                    {
+                        var repoDestination = Path.Combine(_config["destination"], repo.Name);
+
+                        // We need to fetch updates if the directory already exists
+                        if (Directory.Exists(repoDestination) && Repository.IsValid(repoDestination))
+                        {
+                            FetchUpdatesForRepo(repo, repoDestination);
+                        }
+                        // Create a bare clone of the repository
+                        else
+                        {
+                            CloneBareRepo(repo, repoDestination);
+                        }
+
+                        Logger.Current.Log(_logLabel, "Clone operation complete.");
+                    }
+                }
+
+                Logger.Current.Log(_logLabel, "Backup complete.");
+            }
+            
             return this;
         }
 
