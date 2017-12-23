@@ -8,7 +8,7 @@ Also included is a .NET Console application that leverages the library to accomp
 
 Grab the binaries or source from the project [releases](https://github.com/gsroberts/atlassian-cloud-backup-tool/releases)
 
-The current release is [v1.0-beta.1](https://github.com/gsroberts/atlassian-cloud-backup-tool/releases/tag/v1.0-beta.1)
+The current release is [v1.0-beta.2](https://github.com/gsroberts/atlassian-cloud-backup-tool/releases/tag/v1.0-beta.2)
 
 In order to use the console application, you will first need to create an appsettings.config file in the same directory as the executable DLL with the appropriate values configured (account, username and password, etc.)
 
