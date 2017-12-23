@@ -251,50 +251,58 @@ namespace AtlassianCloudBackupsLibrary
 
                             if (resultPropExists)
                             {
-                                var resultProp = JObject.Parse(body["result"].ToString());
-
-                                var mediaId = resultProp["mediaFileId"].ToString();
-
-                                var mediaFileName = resultProp["fileName"].ToString();
-
-                                backupFileName = mediaId + "/" + mediaFileName;
                                 backupCreated = true;
+                                
+                                var resultProp = body["result"];
 
-                                Logger.Current.Log(_logLabel, "Backup file generation complete.");
+                                if (resultProp != null)
+                                {
+                                    backupFileName = resultProp.ToString();
+
+                                    Logger.Current.Log(_logLabel, "Backup file generation complete.");
+                                }
+                                else
+                                {
+                                    Logger.Current.Log(_logLabel, "[DEBUG] Result node: " + resultProp);
+                                    Logger.Current.Log(_logLabel, "Unable to get backup link from the service.  You must download it manually!");
+                                }
                             }
                         }
 
                         System.Threading.Thread.Sleep(5000);
                     }
 
-                    var backupFileUrl = string.Format(_service.BaseUrl, Account) + _service.DownloadUrlBase +
-                                        backupFileName;
-
-                    Logger.Current.Log(_logLabel,
-                        string.Format("Getting generated backup file from {0}", backupFileUrl));
-                    // Download the backup
-                    using (var fileResponse = await Client.GetAsync(_service.DownloadUrlBase + backupFileName,
-                        HttpCompletionOption.ResponseHeadersRead))
+                    if (!string.IsNullOrEmpty(backupFileName))
                     {
-                        Logger.Current.Log(_logLabel,
-                            string.Format("Downloading {0} bytes of data...",
-                                fileResponse.Content.Headers.ContentLength));
+                        var backupFileUrl = string.Format(_service.BaseUrl, Account) + _service.DownloadUrlBase +
+                                            backupFileName;
 
-                        using (var stream = await fileResponse.Content.ReadAsStreamAsync())
+                        Logger.Current.Log(_logLabel,
+                            string.Format("Getting generated backup file from {0}", backupFileUrl));
+                        // Download the backup
+                        using (var fileResponse = await Client.GetAsync(_service.DownloadUrlBase + backupFileName,
+                            HttpCompletionOption.ResponseHeadersRead))
                         {
-                            using (var outStream =
-                                File.Open(
-                                    Path.Combine(BackupDestination,
-                                        string.Format(FileName, DateTime.Now.ToString("MMddyy"))), FileMode.Create))
+                            Logger.Current.Log(_logLabel,
+                                string.Format("Downloading {0} bytes of data...",
+                                    fileResponse.Content.Headers.ContentLength.ToString()));
+
+                            using (var stream = await fileResponse.Content.ReadAsStreamAsync())
                             {
-                                await stream.CopyToAsync(outStream);
+                                using (var outStream =
+                                    File.Open(
+                                        Path.Combine(BackupDestination,
+                                            string.Format(FileName, DateTime.Now.ToString("MMddyy"))), FileMode.Create))
+                                {
+                                    await stream.CopyToAsync(outStream);
+                                }
                             }
                         }
-
-                        if (File.Exists("backupTaskID"))
-                        {
-                            File.Delete("backupTaskID");
-                        }
+                    }
+                    
+                    if (File.Exists("backupTaskID"))
+                    {
+                        File.Delete("backupTaskID");
                     }
 
                     Logger.Current.Log(_logLabel, "Download complete.");
@@ -329,7 +337,7 @@ namespace AtlassianCloudBackupsLibrary
 
             switch (typeof(T).Name)
             {
-                case "JIRAService":
+                case "JiraService":
                     serviceToBeBackedUp = "JIRA";
                     break;
                 case "ConfluenceService":

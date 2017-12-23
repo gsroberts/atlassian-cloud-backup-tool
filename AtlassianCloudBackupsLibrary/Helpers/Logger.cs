@@ -35,7 +35,7 @@
 
         public void Log(string topic, string entry)
         {
-            var logEntry = string.Format("{0} [{1}] {2}", DateTime.Now, topic, entry);
+            var logEntry = string.Format("{0} [{1}] {2}", DateTime.Now.ToString(), topic, entry);
 
             File.AppendAllLines(Path.Combine(_logLocation, _logFile), new[] { logEntry });
             Console.WriteLine(logEntry);

@@ -14,7 +14,7 @@
             BaseUrl = "https://{0}.atlassian.net/";
             AuthUrl = "rest/auth/1/session";
             BackupTriggerUrl = "rest/backup/1/export/runbackup";
-            BackupProgressUrl = "rest/internal/2/task/progress/{0}";
+            BackupProgressUrl = "rest/backup/1/export/getProgress?taskId={0}";
             DownloadUrlBase = "plugins/servlet/export/download/";
             LastTaskIdUrl = "rest/backup/1/export/lastTaskId";
         }
