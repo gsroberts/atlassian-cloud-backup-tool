@@ -70,4 +70,4 @@ Note that the /logPath parameter is where the tool will write it's log so make s
 
 The flags 'backupBitBucket', 'backupJira' and 'backupConflence' enable the respective jobs within the console application.  You can exclude any one of them from the command.
 
-There is an additional flag, 'runCleanUpOnly', that can be appended to the command that will only run the backup and archival process for the specified tools. 
+There is an additional flag, 'runCleanUpOnly', that can be appended to the command that will only run the archival process for the specified products. 
