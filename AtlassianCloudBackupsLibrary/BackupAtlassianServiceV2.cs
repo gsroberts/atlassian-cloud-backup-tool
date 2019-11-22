@@ -165,27 +165,8 @@ namespace AtlassianCloudBackupsLibrary
                     Client.DefaultRequestHeaders.Accept.Clear();
                     Client.DefaultRequestHeaders.Accept.Add(new MediaTypeWithQualityHeaderValue("application/json"));
 
-                    Logger.Current.Log(_logLabel, "Attempting to log in to Atlassian...");
-                    // Get auth token from the cloud instance
-                    var content =
-                        new StringContent(
-                            "{" + string.Format(" \"username\" : \"{0}\", \"password\" : \"{1}\" ", UserName,
-                                Password) + "}", Encoding.UTF8, "application/json");
-
-                    var response = await Client.PostAsync(_service.AuthUrl, content);
-
-                    if (response.IsSuccessStatusCode)
-                    {
-                        Logger.Current.Log(_logLabel,
-                            string.Format("Successfully logged in to the {0} account as {1}.", Account, UserName));
-                    }
-                    else
-                    {
-                        Logger.Current.Log(_logLabel, "Failed to authenticate to Atlassian cloud servers!");
-                        Logger.Current.Log(_logLabel,
-                            string.Format("Aborting backup job for {0}!", GetServiceToBeBackedUpLabel()));
-                        return this;
-                    }
+                    var basicHeaderValue = Convert.ToBase64String(Encoding.UTF8.GetBytes($"{UserName}:{Password}"));
+                    Client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Basic", basicHeaderValue);
 
                     Logger.Current.Log(_logLabel, "Triggering backup...");
                     // Trigger backup
