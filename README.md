@@ -8,7 +8,7 @@ Also included is a .NET Console application that leverages the library to accomp
 
 Grab the binaries or source from the project [releases](https://github.com/gsroberts/atlassian-cloud-backup-tool/releases)
 
-The current release is [v1.0-beta.2](https://github.com/gsroberts/atlassian-cloud-backup-tool/releases/tag/v1.0-beta.2)
+The current release is [v1.0-beta.3](https://github.com/gsroberts/atlassian-cloud-backup-tool/releases/tag/v1.0-beta.3)
 
 In order to use the console application, you will first need to create an appsettings.config file in the same directory as the executable DLL with the appropriate values configured (account, username and password, etc.)
 
@@ -19,8 +19,8 @@ In order to use the console application, you will first need to create an appset
   "password": "xxxxxxxxxxxxxx",
   "jiraBackupConfig": {
     "authUrl": "rest/auth/1/session",
-    "backupProgressUrl": "rest/obm/1.0/getprogress",
-    "backupTriggerUrl": "rest/obm/1.0/runbackup",
+    "backupProgressUrl": "rest/backup/1/export/getprogress",
+    "backupTriggerUrl": "rest/backup/1/export/runbackup",
     "baseUrl": "https://{0}.atlassian.net/",
     "destination": "/backup-location/jira",
     "downloadUrlBase": "",
@@ -30,8 +30,8 @@ In order to use the console application, you will first need to create an appset
   },
   "confluenceBackupConfig": {
     "authUrl": "rest/auth/1/session",
-    "backupProgressUrl": "wiki/rest/obm/1.0/getprogress",
-    "backupTriggerUrl": "wiki/rest/obm/1.0/runbackup",
+    "backupProgressUrl": "wiki/rest/backup/1/export/getprogress",
+    "backupTriggerUrl": "wiki/rest/backup/1/export/runbackup",
     "baseUrl": "https://{0}.atlassian.net/",
     "destination": "/backup-location/confluence",
     "downloadUrlBase": "wiki/download/",
@@ -51,6 +51,10 @@ In order to use the console application, you will first need to create an appset
 }
 
 ```
+
+NOTE: Username and password values in the above configuration (except BitBucket) are now required to be:
+- `password`: An API token generated via the JIRA web interface.  For further details on obtaining an API key, see: https://confluence.atlassian.com/cloud/api-tokens-938839638.html
+- `userName`: The email address of the user that generated the token. 
 
 The file paths for the 'destination' properties can be either Unix style paths (shown in the above config example) or Windows style.  For Windows syle paths, you must escape the backslashes like this:
 
