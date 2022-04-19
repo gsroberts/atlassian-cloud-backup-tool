@@ -1,14 +1,12 @@
 # Atlassian Cloud Backups Tool #
 
-This repo contains a .NET Core 2 library written in C# that duplicates the work done by the powershell script published (but not maintained) by Atlassian for backing up its cloud offerings.
+This repo contains a .NET 6 library written in C# that duplicates the work done by the powershell script published (but not maintained) by Atlassian for backing up its cloud offerings.
 
 Also included is a .NET Console application that leverages the library to accomplish backups for both JIRA and Confluence as well as a bare-clone backup of BitBucket repos.  No other service is currently supported but the library will eventually support all Atlassian cloud services.  While it should serve most needs, the console application is intended as an example of how to use the library to perform backups.
 
 # Getting Started #
 
 Grab the binaries or source from the project [releases](https://github.com/gsroberts/atlassian-cloud-backup-tool/releases)
-
-The current release is [v1.0-beta.3](https://github.com/gsroberts/atlassian-cloud-backup-tool/releases/tag/v1.0-beta.3)
 
 In order to use the console application, you will first need to create an appsettings.config file in the same directory as the executable DLL with the appropriate values configured (account, username and password, etc.)
 
