@@ -16,9 +16,10 @@
         {
             ParameterCollection parameters = new ParameterCollection(args);
 
-            var logLocation = parameters.GetParameterValue<string>("logPath") ?? @"c:\\temp";
+            var logLocation = parameters.GetParameterValue<string>("logPath") ?? Path.GetTempPath();
             var logFileName = parameters.GetParameterValue<string>("logFileName") ?? "atlassian-could-backup-tool.log";
-
+            Console.WriteLine($"Log file can be found at {logLocation}/{logFileName}");
+            
             _logLabel = "Backup-Tool";
 
             Logger.Current.Init(logLocation, logFileName);
